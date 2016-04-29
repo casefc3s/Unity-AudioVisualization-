@@ -1,0 +1,4 @@
+*.suo
+Library/
+*.csproj
+*.sln
