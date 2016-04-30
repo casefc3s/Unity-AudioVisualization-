@@ -9,6 +9,8 @@ Create a link to your music folder under StreamingAssets/Music, or dump a few .m
 
 Hit Play in the Editor, then press the Spacebar. Arrow keys control the camera motion, "S" skips to a random track. Numbered keys (non-keypad) should skip around the song.
 
+Video sample: https://www.youtube.com/watch?v=Q-0KR2F0oEk
+
 ## NOTES:
 
 This project is far from perfect, but it's a good start for somebody that wants to see an application of applying audio spectrum output to visuals. As far as I can remember, the NAudio plugin only works on Windows.
