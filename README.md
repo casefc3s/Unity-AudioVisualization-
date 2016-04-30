@@ -5,13 +5,13 @@ Hopefully I'll be getting things tidy shortly, but if you're feeling brave, take
 
 ## What to do:
 
-Create a link to your music folder under StreamingAssets/Music, or dump a few songs in there.
+Create a link to your music folder under StreamingAssets/Music, or dump a few .mp3's in there.
 
 Hit Play in the Editor, then press the Spacebar. Arrow keys control the camera motion, "S" skips to a random track. Numbered keys (non-keypad) should skip around the song.
 
 ## NOTES:
 
-Right now the color effects are hard-coded in for white bars that glow green while I was messing around. I'll revert that code later so that the material prefabs assigned in the inspector are actually used properly again.
+This project is far from perfect, but it's a good start for somebody that wants to see an application of applying audio spectrum output to visuals. As far as I can remember, the NAudio plugin only works on Windows.
 
 ## Future:
 
