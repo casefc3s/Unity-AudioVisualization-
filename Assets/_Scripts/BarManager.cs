@@ -3,12 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class BarManager : MonoBehaviour {
-		public GameObject[] colorPrefabs;
+	public GameObject[] colorPrefabs;
 	AudioMagic magicScript;
+    [HideInInspector]
 	public Bars[] bars;
-	bool set = false;
-		Color startColor;
-		Color endColor;
+	Color startColor;
+	Color endColor;
 
 	// Use this for initialization
 	void Start () {
@@ -32,7 +32,7 @@ public class BarManager : MonoBehaviour {
 
 			avail.RemoveAt(r);
 	}
-		
+
 		if (magicScript == null) magicScript = GameObject.FindObjectOfType<AudioMagic>();
 				if (magicScript != null) magicScript.Init(startColor, endColor);
 	}
@@ -56,7 +56,7 @@ public class BarManager : MonoBehaviour {
 			Transform tr = bars[i].transform;
 
 			List<GameObject> children = new List<GameObject>();
-			foreach (Transform child in tr) 
+			foreach (Transform child in tr)
 				children.Add(child.gameObject);
 
 			children.ForEach(child => Destroy(child));

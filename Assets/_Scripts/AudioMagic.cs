@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-// vocal frequency 300Hz - 3.4kHz 
+// vocal frequency 300Hz - 3.4kHz
 // http://en.wikipedia.org/wiki/Voice_frequency
 // http://www.audio-issues.com/music-mixing/5-need-to-know-frequency-areas-of-the-vocal/
 
@@ -10,85 +10,108 @@ using System.Collections.Generic;
 // public int[] freqRange = new int[10]{31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000};
 
 public class AudioMagic : MonoBehaviour {
-	[HideInInspector]
-	public float[] spectrumL;
-    [HideInInspector]
-    public float[] spectrumR;
-	[HideInInspector]
-	public float[] outputL;
-    [HideInInspector]
-    public float[] outputR;
-	// sphere variables
-	public GameObject vocalSphere;
-	public float sphereBaseScale = 5f;
-	public float sphereScaleFactor = 1.5f;
-	public Vector2 vocalFreqRange = new Vector2(300f, 3400f);
-	public float vocalLerpRate = 5f;
-	float vocalSamples = 0f;
-	float sphereScale = 0f;
+    private float[] spectrumL;
+    private float[] spectrumR;
+    private float[] outputL;
+    private float[] outputR;
 
-	// bar variables
-	public Transform barContainer;
-	public List<GameObject> barGOs;
-	public List<float> bars;
-	public float baseHeight = 0.1f;
-	public float barScaleFactor = 3f;
-	public int numSamples = 512;
-	public int lowerSampleRange = 0;
-	public int upperSampleRange = 256;
+    #region Sphere Variables
+    [SerializeField]
+    private GameObject vocalSphere;
+    [SerializeField]
+    private float sphereBaseScale = 5f;
+    [SerializeField]
+    private float sphereScaleFactor = 2f;
+    [SerializeField]
+    private Vector2 vocalFreqRange = new Vector2(500f, 3400f);
+    [SerializeField]
+    private float vocalLerpRate = 20f;
+	private float vocalSamples = 0f;
+	private float sphereScale = 0f;
+    #endregion
 
+    #region Bar Variables
+    [SerializeField]
+    private Transform barContainer;
+	private List<GameObject> barGOs = new List<GameObject>();
+    private List<float> bars = new List<float>();
+    [SerializeField]
+    private float baseHeight = 0.1f;
+    [SerializeField]
+    private float barScaleFactor = 150f;
+    [SerializeField]
+    private int numSamples = 8192;
+    [SerializeField]
+    private int lowerSampleRange = 0;
+    [SerializeField]
+    private int upperSampleRange = 8192;
+    #endregion
+
+    [Tooltip("We use this to adjust scale from lower to higher frequencies. 0-1 is the base to highest frequency.")]
     public AnimationCurve freqCurve;
 
 	[HideInInspector]
 	public bool ready = false;
 
-	// lerping and sample rates/resolutions
-	int range = 0;
+    #region Lerping and Sample Rates/Resolutions
+    int range = 0;
 	float freqResolution = 0f;
 	float samples = 0f;
 	float maxSample = 0f;
 	float sampleTime = 0f;
 	int barsPerRange = 0;
-	public float sampleTimeRate = 1f;
-	public float riseLerpRate = 10f;
-	public float fallLerpRate = 20f;
-	public float[] freqRange = new float[10]{31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f};
+    [SerializeField]
+    private float sampleTimeRate = 1f;
+    [SerializeField]
+    private float riseLerpRate = 100f;
+    [SerializeField]
+    private float fallLerpRate = 10f;
+    [SerializeField]
+    private float[] freqRange = new float[10]{31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f};
+    #endregion
 
-	// materials
-	[HideInInspector]
-	public List<Material> mats = new List<Material>();
-	public Material barMat;
-	float scValue = 0f;
-	Color c;
+    #region Materials
+    private List<Material> mats = new List<Material>();
+	private float scValue = 0f;
+	private Color c;
+    #endregion
 
-	// additional options
-	public bool fullSpectrumMode = true;
-	public float maxLevel = 20f;
+    #region Additional Options
+    [SerializeField]
+    private bool fullSpectrumMode = true;
+    [SerializeField]
+    private bool greenLightShow = false;
+    #endregion
 
-	const float halfSampleRate = 24000f;
-	List<float> freqs = new List<float>();
+    const float halfSampleRate = 24000f;
+	private List<float> freqs = new List<float>();
 
-	// for equalized display
-	float start = 0f;	// opening frequency
+    #region For Equalized Display
+    float start = 0f;	// opening frequency
 	float end = 0f;		// closing frequency
 	float goalFreq = 0f;// target frequency of bar
 	int ndx = 0;		// index of freqs[] for bar to use
 	int prevNdx = 0;	// storing index to start search from
 	int b = 0;			// bar index counter
 	float desiredFreqStep = 0f;
-	
-	List<Bar> barScripts = new List<Bar>();
+    #endregion
 
-	float highestSample = 0f;
-	float highestSampleFreq = 0f;
-	bool showGUI = false;
 
-		Color[] sphereColors = new Color[2];
+    private List<Bar> barScripts = new List<Bar>();
+
+    #region Emission References
+    private float highestSample = 0f;
+    private float highestSampleFreq = 0f;
+    #endregion
+
+    private bool showGUI = false;
+
+    private Color[] sphereColors = new Color[2];
 
 	// Use this for initialization
-		public void Init (Color a, Color b) {
-				sphereColors[0] = a;
-				sphereColors[1] = b;
+	public void Init (Color a, Color b) {
+			sphereColors[0] = a;
+			sphereColors[1] = b;
 
 		if (barGOs.Count > 0) barGOs.Clear();
 		if (bars.Count > 0) bars.Clear();
@@ -103,7 +126,7 @@ public class AudioMagic : MonoBehaviour {
 					barScripts.Add (bgo.GetComponent<Bar>());
 				}
 			}
-		} 
+		}
 
 		if (barGOs.Count < 1) {
 			Debug.Log ("No bars set.");
@@ -134,7 +157,6 @@ public class AudioMagic : MonoBehaviour {
 		}
 
 		barsPerRange = (barGOs.Count/freqRange.Length);
-		//int barsRemaining = barGOs.Count%freqRange.Length;
 		Debug.Log ("Bars per range: " + barsPerRange);
 
 		spectrumL = spectrumR = new float[numSamples];
@@ -142,7 +164,7 @@ public class AudioMagic : MonoBehaviour {
 
 		ready = true;
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
 		if (!ready) return;
@@ -152,8 +174,8 @@ public class AudioMagic : MonoBehaviour {
         AudioListener.GetSpectrumData(spectrumR, 1, FFTWindow.BlackmanHarris);
 		AudioListener.GetOutputData(outputL, 0);
         AudioListener.GetOutputData(outputR, 1);
-				//spectrum = new float[numSamples];
-				//AudioListener.GetOutputData(spectrum, 0);
+		//spectrum = new float[numSamples];
+		//AudioListener.GetOutputData(spectrum, 0);
 
 		// clear previous values
 		vocalSamples = 0f;
@@ -206,10 +228,8 @@ public class AudioMagic : MonoBehaviour {
 				// above needs a check for if A) prevNdx and ndx are more than one index apart, so that interim samples
 				//	of the spectrum can be added to this one for accumulation of broad spectrums, and B) to lerp with neighbors
 				// 	or zero if prevNdx and ndx are the same to prevent flat bars in low frequencies
-
 				bars[b] = spectrumL[ndx];
 				prevNdx = ndx;
-
 
 				if (bars[b] > maxSample || (Time.time-sampleTime) > sampleTimeRate) {
 					maxSample = bars[b];
@@ -218,7 +238,7 @@ public class AudioMagic : MonoBehaviour {
 
 				// scale assignment
 				barGOs[b].transform.localScale = new Vector3(1f, baseHeight + (bars[b] * barScaleFactor), 1f);
-				
+
 				// material assignment
 				scValue = maxSample > 0f ? (bars[b]/maxSample) : 0f;
 				c = mats[b].GetColor("_EmissionColorUI") * Mathf.Clamp01(scValue);
@@ -232,14 +252,6 @@ public class AudioMagic : MonoBehaviour {
 	void FullSpectrumUpdate() {
 		highestSample = 0f;
 		highestSampleFreq = 0f;
-
-		/*for (int i = 0; i < spectrumL.Length; i++) {
-			// vocal sample increment
-			if ((float)i*freqResolution >= vocalFreqRange.x && (float)i*freqResolution <= vocalFreqRange.y) {
-                vocalSamples += Mathf.Abs(spectrumL[i]);
-                vocalSamples += Mathf.Abs(spectrumR[i]);
-			}
-		}*/
 
 		float deviance = 0f;
 		int nRange = 0;
@@ -262,20 +274,14 @@ public class AudioMagic : MonoBehaviour {
 				else v = j;
 				deviance = Mathf.Abs (j-i)/((float)nRange);
                 samples += (Mathf.Lerp (Mathf.Abs(spectrumL[v]), 0f, deviance)+Mathf.Lerp(Mathf.Abs(spectrumR[v]), 0f, deviance))*0.5f;
-                //samples += Mathf.Lerp(Mathf.Abs(spectrumR[v]), 0f, deviance);
 			}
 
-			/*for (int j = lowerSampleRange+(i*range); j < lowerSampleRange+(range*(i+1)); j++) {
-				samples += spectrum[j];
-			}*/
 			// value assignment
             //samples = Mathf.Clamp01(samples+(((outputL[i]*0.05f)+(outputR[i]*0.05f))*0.9f)/*/(float)range*/); // modified freq + sample ratio
             //samples = Mathf.Clamp01(samples*((Mathf.Abs(outputL[i])+Mathf.Abs(outputR[i]))*1f));  // frequency output and sample output
             //samples = Mathf.Clamp01((Mathf.Abs(outputL[i])+Mathf.Abs(outputR[i])));               // sample output only
             //samples = Mathf.Clamp01(samples);                                                     // combined L/R frequency output
             samples = Mathf.Clamp01(samples)*freqCurve.Evaluate((float)i/(float)bars.Count);    // combined L/R channels freq + level balance curve
-			// ascending values for appearances
-			//samples *= Mathf.Lerp (1f, 5f, (float)((float)i/(float)bars.Count));
 
 			bars[i] = Mathf.Lerp (bars[i], samples, (bars[i] < samples ? Time.deltaTime*riseLerpRate : Time.deltaTime*fallLerpRate));
 
@@ -284,21 +290,28 @@ public class AudioMagic : MonoBehaviour {
 				highestSample = bars[i];
 				highestSampleFreq = (float)i*(freqResolution*(float)range);
 			}
-			
+
 		    if (bars[i] > maxSample || (Time.time-sampleTime) > sampleTimeRate) {
 				maxSample = bars[i];
 				sampleTime = Time.time;
 			}
-			
+
 			// scale assignment
-			//barScripts[i].container.barScale
-            barGOs[i].transform.localScale = new Vector3(1f, baseHeight + (bars[i] * /*barScaleFactor*/barScripts[i].container.barScale), 1f);
-			
+            barGOs[i].transform.localScale = new Vector3(1f, baseHeight + (bars[i] * barScripts[i].container.barScale), 1f);
+
 			// material assignment
 			if (mats[i].HasProperty("_EmissionColor")) {
-				scValue = maxSample > 0f ? (bars[i]/*samples*//maxSample) : 0f;
-                    c = Color.Lerp(Color.green, Color.cyan, bars[i]) * Mathf.Clamp01(scValue);    
-				//c = mats[i].GetColor("_Color") * Mathf.Clamp01(scValue);
+				scValue = maxSample > 0f ? (bars[i]/maxSample) : 0f;
+
+                if (greenLightShow)
+                {
+                    c = Color.Lerp(Color.green, Color.cyan, bars[i]) * Mathf.Clamp01(scValue);
+                }
+                else
+                {
+                    c = mats[i].GetColor("_Color") * Mathf.Clamp01(scValue);
+                }
+
 				barGOs[i].GetComponent<MeshRenderer>().material.SetColor("_EmissionColor", c);
 			}
 		}
@@ -320,6 +333,8 @@ public class AudioMagic : MonoBehaviour {
 		vocalSphere.transform.localScale = Vector3.Max((Vector3.one*sphereBaseScale), (Vector3.one*sphereBaseScale)+(Vector3.one*sphereScale)*sphereScaleFactor);
 		Material sphereMat = vocalSphere.GetComponent<MeshRenderer>().material;
 		if (sphereMat.HasProperty("_EmissionColor")) {
+
+            // this takes the inner/outer colors of the surrounding bars and lerps between the two
 			c = Color.Lerp(sphereColors[0], sphereColors[1], Mathf.PingPong(Time.time*0.25f, 1f)) * Mathf.Clamp01(vocalSamples*0.5f);
 
 			//c = /*sphereMat.GetColor("_Color")*/Color.cyan * Mathf.Clamp01 (vocalSamples*/*1f*/0.5f);

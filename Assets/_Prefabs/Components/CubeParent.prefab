@@ -23,7 +23,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 198576}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.33000004, y: 0, z: -8.82999992}
+  m_LocalPosition: {x: 1.33, y: 0, z: -8.83}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -39,10 +39,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948c7c8eaf388914f9fe67de29ffc8e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioScript: {fileID: 0}
+  scheme: 0
   barPrefab: {fileID: 133816, guid: c4c0a4048e4c1ae4d90458563576bb55, type: 2}
+  radius: 10
+  radiusDescentRate: 0.05
   barSamples: 100
   barScale: 150
+  autoRadius: 0
+  autoDescentRate: 1
   tr: {fileID: 0}
 --- !u!1001 &100100000
 Prefab:

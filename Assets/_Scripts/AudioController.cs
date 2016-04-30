@@ -25,10 +25,6 @@ public class AudioController : MonoBehaviour {
 	int length = 0;
 	int skipRate = 0;
 
-    int loaded = 0;
-
-    List<AudioClip> clips = new List<AudioClip>();
-
 	// Use this for initialization
 	void Start () {
 		src = GetComponent<AudioSource>();
@@ -143,7 +139,7 @@ public class AudioController : MonoBehaviour {
         }
     }
 
-    void PlayNextTrack() {
+    public void PlayNextTrack() {
         StopCoroutine(PrepareNextSong());
 
         if (string.IsNullOrEmpty(upNext.path))
@@ -235,79 +231,6 @@ public class AudioController : MonoBehaviour {
         yield return null;
     }
 
-	/*public void PlayRandomAudio() {
-		Debug.Log("Searching for new song...");
-		string fpath = Application.dataPath + path;
-        src.Stop();
-        // remove previous played audio
-        if (!string.IsNullOrEmpty(nowPlaying)) {
-            UnloadWav(nowPlaying);
-            nowPlaying = "";
-        }
-        src.timeSamples = 0;
-
-		if (Directory.Exists(fpath)) {
-			string[] files = Directory.GetFiles(fpath, "*.mp3", SearchOption.AllDirectories);
-            Debug.Log(files.Length.ToString() + " mp3's found.");
-            if (files.Length == 0) return;
-
-			int r = Random.Range(0,files.Length);
-            bool exists = true;
-            int tries = 0;
-            while (exists && tries != files.Length) {
-                exists = false;
-                foreach(KeyValuePair<string,int> kvp in songs) {
-                    if (kvp.Value == r) {
-                        r = Random.Range(0,files.Length);
-                        tries++;
-                        exists = true;
-                        break;
-                    }
-                }
-            }
-
-            if (tries == files.Length) {
-                Debug.LogWarning("Clearing playlist, cycling through again.");
-                songs.Clear();
-            }
-
-			StartCoroutine(AudioGrabRoutine(files[r], r, false));
-		} else {
-				Debug.LogError("File path '" + fpath + "' does not exist.");
-		}
-	}
-
-    IEnumerator AudioGrabRoutine(string path, int r, bool nowPlaying) {
-		string tPath = Application.dataPath + tempDir;
-		string filepath = tPath + Path.GetFileNameWithoutExtension(path) + ".wav";
-		if (!Directory.Exists(tPath)) {
-				Directory.CreateDirectory(tPath);
-		}
-		using (Mp3FileReader reader = new Mp3FileReader(path)) {
-				WaveFileWriter.CreateWaveFile(filepath, reader);
-		}
-
-		WWW song = new WWW("file://" + filepath);
-		yield return song;
-
-		if (!string.IsNullOrEmpty(song.error)) {
-			Debug.LogError("Could not load " + filepath);
-		}
-
-		AudioClip clip = song.GetAudioClip(false,true);
-		Debug.Log("Loading " + filepath + "...");
-		while  (clip.loadState != AudioDataLoadState.Loaded &&
-				clip.loadState != AudioDataLoadState.Failed)
-			yield return song;
-
-		if (clip.loadState == AudioDataLoadState.Failed) {
-			Debug.LogError("Failed to load.");
-		} else {
-            FinishedLoading(clip, filepath, r);
-		}
-		yield return null;
-	}*/
-
     void FinishedLoading(SongData sd) {
 		src.clip = sd.clip;
         length = src.clip.samples;
@@ -332,6 +255,11 @@ public class AudioController : MonoBehaviour {
         foreach (SongData sd in songs) {
             if (File.Exists(sd.tempDir)) {
                 File.Delete(sd.tempDir);
+                string meta = sd.tempDir;
+                meta = meta.Replace(".mp3", ".meta");
+
+                if (File.Exists(meta))
+                    File.Delete(meta);
             }
         }
 
