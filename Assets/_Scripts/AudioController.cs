@@ -120,7 +120,7 @@ public class AudioController : MonoBehaviour {
             }
         }
 
-        if (tries == files.Length) {
+        if (tries == files.Length && files.Length > 1) {
             Debug.LogError("Clearing playlist, unable to select new track.");
             songs.Clear();
         } else {
@@ -245,6 +245,11 @@ public class AudioController : MonoBehaviour {
     void UnloadWav(SongData sd) {
         if (songs.Contains(sd) && File.Exists(sd.tempDir)) {
             File.Delete(sd.tempDir);
+            string meta = sd.tempDir;
+            meta = meta.Replace(".mp3", ".meta");
+
+            if (File.Exists(meta))
+                File.Delete(meta);
             //songs.Remove(key);
         }
 	}

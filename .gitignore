@@ -2,3 +2,4 @@
 Library/
 *.csproj
 *.sln
+Temp/
