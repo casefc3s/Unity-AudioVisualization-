@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using NAudio;
 using NAudio.Wave;
+using UnityEditor;
 
 public class AudioController : MonoBehaviour {
     struct SongData {
@@ -25,12 +26,17 @@ public class AudioController : MonoBehaviour {
 	int length = 0;
 	int skipRate = 0;
 
+    string _fpath;
+
 	// Use this for initialization
 	void Start () {
 		src = GetComponent<AudioSource>();
 
         Application.targetFrameRate = 30;
         AudioListener.pause = true;
+
+        _fpath = EditorUtility.OpenFolderPanel("Select Music Folder Desired", "", "");
+
 
         SetupInitialSongs();
 	}
@@ -76,24 +82,24 @@ public class AudioController : MonoBehaviour {
 
     // set now playing and up next tracks
     void SetupInitialSongs() {
-        string fpath = Application.dataPath + path;
+        //string _fpath = Application.dataPath + path;
         // go through the directory and search for songs
-        if (Directory.Exists(fpath)) {
-            string[] files = Directory.GetFiles(fpath, "*.mp3", SearchOption.AllDirectories);
+        if (Directory.Exists(_fpath)) {
+            string[] files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
             Debug.Log(files.Length.ToString() + " mp3's found.");
 
             SetNowPlaying();
             SetUpNext();
         } else {
-            Debug.LogError("File path '" + fpath + "' does not exist.");
+            Debug.LogError("File path '" + _fpath + "' does not exist.");
         }
     }
 
     SongData GetAvailableTrack() {
         SongData sd = new SongData();
 
-        string fpath = Application.dataPath + path;
-        string[] files = Directory.GetFiles(fpath, "*.mp3", SearchOption.AllDirectories);
+        //string fpath = Application.dataPath + path;
+        string[] files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
 
         if (files.Length == 0) return sd;
         // pick a random song
@@ -142,10 +148,10 @@ public class AudioController : MonoBehaviour {
     public void PlayNextTrack() {
         StopCoroutine(PrepareNextSong());
 
-        if (string.IsNullOrEmpty(upNext.path))
+        if (string.IsNullOrEmpty(upNext.path)){
             SetUpNext();
-
-        if (!string.IsNullOrEmpty(upNext.path)) {
+        }
+        else {
             PlayUpNext();
         }
     }
