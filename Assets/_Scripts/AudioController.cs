@@ -2,15 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using NAudio;
 using NAudio.Wave;
 using UnityEditor;
 
 public class AudioController : MonoBehaviour {
     struct SongData {
         public string path;
-        public string tempDir;
+        public string songDir;
         public int index;
         public AudioClip clip;
     }
@@ -22,21 +20,21 @@ public class AudioController : MonoBehaviour {
     SongData nowPlaying;
     SongData upNext;
 
-	AudioSource src;
+	AudioSource audioSrc;
 	int length = 0;
 	int skipRate = 0;
 
     string _fpath;
+    string[] files;
 
-	// Use this for initialization
-	void Start () {
-		src = GetComponent<AudioSource>();
+    // Use this for initialization
+    void Start () {
+		audioSrc = GetComponent<AudioSource>();
 
         Application.targetFrameRate = 30;
         AudioListener.pause = true;
 
         _fpath = EditorUtility.OpenFolderPanel("Select Music Folder Desired", "", "");
-
 
         SetupInitialSongs();
 	}
@@ -44,30 +42,30 @@ public class AudioController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKeyDown(KeyCode.Alpha1)) {
-			src.timeSamples = skipRate;
+			audioSrc.timeSamples = skipRate;
 		} else if (Input.GetKeyDown(KeyCode.Alpha2)) {
-			src.timeSamples = skipRate*2;
+			audioSrc.timeSamples = skipRate*2;
 		} else if (Input.GetKeyDown(KeyCode.Alpha3)) {
-			src.timeSamples = skipRate*3;
+			audioSrc.timeSamples = skipRate*3;
 		} else if (Input.GetKeyDown(KeyCode.Alpha4)) {
-			src.timeSamples = skipRate*4;
+			audioSrc.timeSamples = skipRate*4;
 		} else if (Input.GetKeyDown(KeyCode.Alpha5)) {
-			src.timeSamples = skipRate*5;
+			audioSrc.timeSamples = skipRate*5;
 		} else if (Input.GetKeyDown(KeyCode.Alpha6)) {
-			src.timeSamples = skipRate*6;
+			audioSrc.timeSamples = skipRate*6;
 		} else if (Input.GetKeyDown(KeyCode.Alpha7)) {
-			src.timeSamples = skipRate*7;
+			audioSrc.timeSamples = skipRate*7;
 		} else if (Input.GetKeyDown(KeyCode.Alpha8)) {
-			src.timeSamples = skipRate*8;
+			audioSrc.timeSamples = skipRate*8;
 		} else if (Input.GetKeyDown(KeyCode.Alpha9)) {
-			src.timeSamples = skipRate*9;
+			audioSrc.timeSamples = skipRate*9;
 		} else if (Input.GetKeyDown (KeyCode.Alpha0)) {
-			src.timeSamples = 0;
+			audioSrc.timeSamples = 0;
 		}
 
 		if (Input.GetKeyDown(KeyCode.Space)) {
 			AudioListener.pause = !AudioListener.pause;
-			if (!src.isPlaying) {
+			if (!audioSrc.isPlaying) {
                 PlayNextTrack();
 			}
 		}
@@ -82,10 +80,11 @@ public class AudioController : MonoBehaviour {
 
     // set now playing and up next tracks
     void SetupInitialSongs() {
-        //string _fpath = Application.dataPath + path;
+//        string _fpath = Application.dataPath + path;
+
         // go through the directory and search for songs
         if (Directory.Exists(_fpath)) {
-            string[] files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
+            files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
             Debug.Log(files.Length.ToString() + " mp3's found.");
 
             SetNowPlaying();
@@ -95,13 +94,30 @@ public class AudioController : MonoBehaviour {
         }
     }
 
+    void SetNowPlaying() {
+        nowPlaying = GetAvailableTrack();
+        if (!string.IsNullOrEmpty(nowPlaying.path)) {
+            songs.Add(nowPlaying);
+        }
+    }
+
+    void SetUpNext() {
+        upNext = GetAvailableTrack();
+        if (!string.IsNullOrEmpty(upNext.path)) {
+            StartCoroutine(LoadSong(upNext, false));
+            songs.Add(upNext);
+        }
+    }
+
     SongData GetAvailableTrack() {
         SongData sd = new SongData();
 
-        //string fpath = Application.dataPath + path;
-        string[] files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
+//        string fpath = Application.dataPath + path;
+//        string[] files = Directory.GetFiles(_fpath, "*.mp3", SearchOption.AllDirectories);
 
-        if (files.Length == 0) return sd;
+        if (files.Length == 0)
+            return sd;
+
         // pick a random song
         int r = Random.Range(0,files.Length);
 
@@ -113,6 +129,7 @@ public class AudioController : MonoBehaviour {
             if (files[r].Contains("._")) {
                 exists = true;
             }
+
             foreach(SongData song in songs) {
                 if (song.index == r) {
                     exists = true;
@@ -131,18 +148,54 @@ public class AudioController : MonoBehaviour {
             songs.Clear();
         } else {
             sd.path = files[r];
-            sd.tempDir = Application.dataPath + tempDir + Path.GetFileNameWithoutExtension(files[r]) + ".wav";
+//            sd.songDir = _fpath;
+            sd.songDir = Application.dataPath + tempDir + Path.GetFileNameWithoutExtension(sd.path) + ".wav";
             sd.index = r;
         }
 
         return sd;
     }
 
-    void SetNowPlaying() {
-        nowPlaying = GetAvailableTrack();
-        if (!string.IsNullOrEmpty(nowPlaying.path)) {
-            songs.Add(nowPlaying);
+    IEnumerator LoadSong(SongData sd, bool playImmediate) {
+        if (!File.Exists(sd.songDir) || sd.clip == null) {
+
+            // create the temp wav file
+            Debug.Log("Converting mp3 to wav: " + sd.path);
+            if (!Directory.Exists(Application.dataPath + tempDir)) {
+                Directory.CreateDirectory(Application.dataPath + tempDir);
+            }
+            using (Mp3FileReader reader = new Mp3FileReader(sd.path)) {
+                WaveFileWriter.CreateWaveFile(sd.songDir, reader);
+            }
+
+            WWW song = new WWW("file://" + sd.songDir);
+            yield return song;
+
+            if (!string.IsNullOrEmpty(song.error)) {
+                Debug.LogError("Could not load " + sd.songDir);
+            }
+
+            AudioClip clip = song.GetAudioClip(false, true);
+            while (clip.loadState != AudioDataLoadState.Loaded && clip.loadState != AudioDataLoadState.Failed) {
+                yield return song;
+            }
+
+            sd.clip = clip;
+            if (!playImmediate) {
+                upNext.clip = clip;
+            }
         }
+
+        if (sd.clip.loadState == AudioDataLoadState.Failed) {
+            Debug.LogError("Failed to load.");
+        }
+        else if (playImmediate) {
+            FinishedLoading(sd);
+        }
+        else {
+            Debug.Log("Finished loading next track " + sd.songDir);
+        }
+        yield return null;
     }
 
     public void PlayNextTrack() {
@@ -156,19 +209,11 @@ public class AudioController : MonoBehaviour {
         }
     }
 
-    void SetUpNext() {
-        upNext = GetAvailableTrack();
-        if (!string.IsNullOrEmpty(upNext.path)) {
-            StartCoroutine(LoadSong(upNext, false));
-            songs.Add(upNext);
-        }
-    }
-
     void PlayUpNext() {
-        src.Stop();
-        src.timeSamples = 0;
+        audioSrc.Stop();
+        audioSrc.timeSamples = 0;
         // remove previous played audio
-        if (!string.IsNullOrEmpty(nowPlaying.tempDir)) {
+        if (!string.IsNullOrEmpty(nowPlaying.songDir)) {
             UnloadWav(nowPlaying);
         }
         nowPlaying = upNext;
@@ -191,7 +236,7 @@ public class AudioController : MonoBehaviour {
             yield return new WaitForEndOfFrame();
 
         yield return new WaitForSeconds(nowPlaying.clip.length);
-        while (src.isPlaying) {
+        while (audioSrc.isPlaying) {
             yield return new WaitForEndOfFrame();
         }
 
@@ -199,59 +244,21 @@ public class AudioController : MonoBehaviour {
         yield return null;
     }
 
-    IEnumerator LoadSong(SongData sd, bool playImmediate) {
-        if (!File.Exists(sd.tempDir) || sd.clip == null) {
-            // create the temp wav file
-            Debug.Log("Converting mp3 to wav: " + sd.path);
-            if (!Directory.Exists(Application.dataPath + tempDir)) {
-                Directory.CreateDirectory(Application.dataPath + tempDir);
-            }
-            using (Mp3FileReader reader = new Mp3FileReader(sd.path)) {
-                WaveFileWriter.CreateWaveFile(sd.tempDir, reader);
-            }
-
-            WWW song = new WWW("file://" + sd.tempDir);
-            yield return song;
-
-            if (!string.IsNullOrEmpty(song.error)) {
-                Debug.LogError("Could not load " + sd.tempDir);
-            }
-
-            AudioClip clip = song.GetAudioClip(false,true);
-            while  (clip.loadState != AudioDataLoadState.Loaded &&
-                clip.loadState != AudioDataLoadState.Failed)
-                yield return song;
-
-            sd.clip = clip;
-            if (!playImmediate)
-                upNext.clip = clip;
-        }
-
-        if (sd.clip.loadState == AudioDataLoadState.Failed) {
-            Debug.LogError("Failed to load.");
-        } else if (playImmediate) {
-            FinishedLoading(sd);
-        } else {
-            Debug.Log("Finished loading next track " + sd.tempDir);
-        }
-        yield return null;
-    }
-
     void FinishedLoading(SongData sd) {
-		src.clip = sd.clip;
-        length = src.clip.samples;
+		audioSrc.clip = sd.clip;
+        length = audioSrc.clip.samples;
         skipRate = length / 10;
-        src.Play();
-        Debug.Log("Playing " + sd.tempDir);
+        audioSrc.Play();
+        Debug.Log("Playing " + sd.songDir);
 
         SongTitle st = FindObjectOfType<SongTitle>();
-        if (st != null) st.Set(Path.GetFileNameWithoutExtension(sd.tempDir));
+        if (st != null) st.Set(Path.GetFileNameWithoutExtension(sd.songDir));
 	}
 
     void UnloadWav(SongData sd) {
-        if (songs.Contains(sd) && File.Exists(sd.tempDir)) {
-            File.Delete(sd.tempDir);
-            string meta = sd.tempDir;
+        if (songs.Contains(sd) && File.Exists(sd.songDir)) {
+            File.Delete(sd.songDir);
+            string meta = sd.songDir;
             meta = meta.Replace(".mp3", ".meta");
 
             if (File.Exists(meta))
@@ -264,16 +271,16 @@ public class AudioController : MonoBehaviour {
         if (songs == null || songs.Count == 0) return;
 
         foreach (SongData sd in songs) {
-            if (File.Exists(sd.tempDir)) {
-                File.Delete(sd.tempDir);
-                string meta = sd.tempDir;
+            if (File.Exists(sd.songDir)) {
+                File.Delete(sd.songDir);
+                string meta = sd.songDir;
                 meta = meta.Replace(".mp3", ".meta");
 
-                if (File.Exists(meta))
+                if (File.Exists(meta)) {
                     File.Delete(meta);
+                }
             }
         }
-
         songs.Clear();
     }
 }
