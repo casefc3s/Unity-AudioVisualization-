@@ -17,11 +17,10 @@ This project is far from perfect, but it's a good start for somebody that wants 
 
 ## Future:
 
-What I'd like to do, first and foremost, is get the scene and code cleaned up so it's more easily readable. However, I would like to get the following in place, and feel free to fork/contribute!
-   ** Cleaned up some of the code for better readability and flow -claytonNighthawk
+What I'd like to do, first and foremost, is get the scene and code cleaned up so it's more easily readable. However, I would like to get the following in place, and feel free to fork/contribute! ** Cleaned up some of the code for better readability and flow -claytonNighthawk
 * Music browser and playlist - allow user to open a dialogue to select songs to play or add to a playlist. 
-    * Half done but its not usable outside of the editor... -claytonNighthawk 
+  * Half done but its not usable outside of the editor... -claytonNighthawk 
 * Audio streaming - not just .mp3's, but most common audio formats including .ogg and .mp4. Currently the audio must be placed in a resource folder and exported to .wav temporarily.
-    * Looking into a way to read other formats -claytonNighthawk 
+  * Looking into a way to read other formats -claytonNighthawk 
 * Real-time device listening - instead of having to play mp3s, I want the visualization to work off any audio playing on the system.
 * Submit your ideas to go here!
